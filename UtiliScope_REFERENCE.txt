@@ -1,0 +1,565 @@
+================================================================================
+UTILISCOPE — DOCUMENT DE RÉFÉRENCE TECHNIQUE COMPLET
+================================================================================
+Version          : Beta v1.2
+Date du document : 13 avril 2026
+Auteur           : David-Olivier Gascon — STUDIO D MTL
+Sites            : https://utiliscope.xyz | https://manoirs.ca/en/
+Bundle ID        : com.studiodmtl.utiliscope
+================================================================================
+
+
+SOMMAIRE
+--------------------------------------------------------------------------------
+1.  Description du produit
+2.  Stack technique
+3.  Architecture des fichiers
+4.  Structure de main_app.py (classes, méthodes, logique)
+5.  Système d'internationalisation (FR/EN)
+6.  Système de trial (7 jours, Keychain macOS)
+7.  Système de licence (LemonSqueezy)
+8.  Chiffrement local des licences
+9.  Logique de démarrage (main())
+10. Protection du code (Cython)
+11. Pipeline de build (build.py)
+12. Configuration codesign et notarisation
+13. DMG : layout, icônes, fichiers inclus
+14. Fichiers ressources
+15. Commandes utiles (dev, build, debug, reset)
+16. Bugs résolus et leçons apprises
+17. Comportement hors-ligne
+18. Test "comme un autre Mac"
+19. Reset complet de l'app
+20. Identifiants et secrets
+21. Roadmap / pistes futures
+
+
+================================================================================
+1. DESCRIPTION DU PRODUIT
+================================================================================
+
+UtiliScope est une application macOS de mesure colorimétrique professionnelle
+en temps réel destinée aux photographes, coloristes et vidéastes.
+
+Fonctionnalités principales :
+- Vectorscope multi-espace : BT.709, BT.601, BT.2020, ARRI, DCI-P3
+- Skinline (référence pour tons de peau)
+- Marqueurs R/G/B/C/M/Y
+- Analyse couleur sous le curseur (RGB, HEX, HSV, IRE)
+- Mode follow / locked / capture / target
+- Snapshots et marqueurs persistants
+- Préférences utilisateur sauvegardées
+- Bilingue FR/EN (changement à chaud des libellés via tr())
+- Distribution commerciale via LemonSqueezy
+- Trial gratuit 7 jours via macOS Keychain
+
+
+================================================================================
+2. STACK TECHNIQUE
+================================================================================
+
+- Python 3.12 (UNIVERSAL2 obligatoire — installé depuis python.org, pas Homebrew)
+- PyQt6                  : GUI
+- pyqtgraph              : vectorscope
+- NumPy                  : calculs colorimétriques
+- mss                    : capture d'écran
+- pyautogui              : position curseur
+- requests               : appels API LemonSqueezy
+- Cython                 : compilation .so (protection du code)
+- PyInstaller            : packaging .app universal2
+- pyperclip              : presse-papier
+
+pip install :
+  PyQt6 pyqtgraph mss pyautogui requests numpy cython pyinstaller pyperclip
+
+
+================================================================================
+3. ARCHITECTURE DES FICHIERS
+================================================================================
+
+Racine du projet : /Users/david-oliviergascon/Documents/4B-Codes/Utiliscope_5/
+
+Fichiers Python (sources)
+  main_app.py            ~2300 lignes — TOUT le code (UI, vectorscope, licence, trial, i18n, prefs)
+  color_meter.py         Lanceur minimal qui importe main_app.so et appelle main()
+  build.py               Pipeline de build complet en 6 étapes
+  setup.py               Configuration Cython
+  create_eula_pdf.py     Génère le PDF EULA bilingue avec ReportLab
+
+Ressources
+  ColorScopes.icns       Icône de l'app + icône volume DMG
+  pipette.png            Source de l'icône
+  entitlements.plist     disable-library-validation + allow-unsigned-executable-memory
+  UtiliScope Beta.spec   Fichier spec PyInstaller
+  UtiliScope_EULA.docx   EULA bilingue FR/EN (source Word)
+  UtiliScope_EULA.pdf    EULA bilingue généré (inclus dans le DMG)
+  UtiliScope Website.webloc  Raccourci macOS vers https://utiliscope.xyz
+
+Sortie de build
+  build/                 Artefacts intermédiaires PyInstaller
+  dist/UtiliScope Beta.app
+  dist/UtiliScope_Beta.dmg
+
+
+================================================================================
+4. STRUCTURE DE main_app.py
+================================================================================
+
+Classes principales (dans l'ordre du fichier) :
+
+1. TrialManager
+   - Stocke la date de début dans le Keychain macOS
+   - Service Keychain : com.studiodmtl.utiliscope.trial
+   - Compte : trial_start
+   - Méthodes : start_trial(), get_trial_status() -> (active: bool, days_remaining: int)
+   - Calcul des jours via total_seconds() pour précision
+
+2. LemonSqueezyLicense(QObject)
+   - Activation et validation via API LemonSqueezy
+   - Store ID    : 241685
+   - Product ID  : 691481
+   - Endpoint    : POST https://api.lemonsqueezy.com/v1/licenses/activate
+   - Validation  : POST https://api.lemonsqueezy.com/v1/licenses/validate
+   - Signaux     : activation_finished(bool, str), validation_finished(bool, str)
+   - Machine ID  : SHA256 de IOPlatformUUID + platform info
+   - Stockage    : ~/Library/Application Support/UtiliScope/.ls_license (chiffré)
+   - Utilise QThread (LicenseValidationThread) pour éviter SIGABRT
+
+3. LicenseWindow(QDialog)
+   - Fenêtre d'activation de clé
+   - Signal activated émis sur succès
+   - Disconnect propre du signal validation_finished sur close/reject/success
+   - Tous les textes traduits via tr()
+
+4. UserPreferences
+   - JSON dans ~/Library/Application Support/UtiliScope/preferences.json
+   - Sauvegarde langue, espace de couleur, position fenêtre, mode info, etc.
+
+5. ColorMeterApp(QMainWindow)
+   - Fenêtre principale
+   - Vectorscope, info couleur, toolbar, status bar
+   - Trial banner (orange) si en mode essai
+   - Menu Aide affiche les raccourcis (sans P/Target depuis avril 2026)
+
+6. Splash
+   - Écran de chargement au démarrage
+
+7. LoaderThread(QThread)
+   - Chargement lazy de NumPy et pyqtgraph en arrière-plan
+
+
+Variables globales importantes :
+  CURRENT_LANG          Langue active ('fr' ou 'en')
+  TRANSLATIONS          Dictionnaire {fr: {...}, en: {...}}
+  ENABLE_DEV_BACKDOOR   False en production. True + clé via $UTILISCOPE_DEV_KEY
+  SECRET_KEY            Clé pour chiffrement local (toujours définie)
+  _license_manager      Référence globale au LemonSqueezyLicense actif
+
+
+================================================================================
+5. SYSTÈME D'INTERNATIONALISATION
+================================================================================
+
+- TRANSLATIONS = {'fr': {...}, 'en': {...}} avec ~70 clés chacune
+- tr(key) retourne la traduction pour CURRENT_LANG
+- Changement de langue via Réglages → effectif au prochain lancement
+- Sauvegardé dans preferences.json
+
+Corrections récentes (avril 2026) :
+- shortcut_space_short : "Espace"/"Space" -> "Espace couleur"/"Color space"
+- shortcut_colorspace  : "Colorspace" -> "Espace couleur" en FR
+- Tous les textes de LicenseWindow et LicenseValidationThread sont passés par tr()
+
+
+================================================================================
+6. SYSTÈME DE TRIAL (7 JOURS)
+================================================================================
+
+Stockage : Keychain macOS via la commande `security`
+  service = com.studiodmtl.utiliscope.trial
+  account = trial_start
+
+Flow :
+1. Premier lancement, pas de licence
+   -> Dialogue d'accueil "Essai gratuit 7 jours" / "Acheter une licence"
+2. Pendant le trial
+   -> Bannière orange : "X jours restants | Acheter une licence | J'ai une clé"
+3. Trial expiré
+   -> Dialogue bloquant : "Acheter" / "J'ai une clé" / "Quitter"
+
+Reset trial :
+  security delete-generic-password -s "com.studiodmtl.utiliscope.trial" -a "trial_start"
+
+
+================================================================================
+7. SYSTÈME DE LICENCE (LEMONSQUEEZY)
+================================================================================
+
+API LemonSqueezy :
+  Activation : POST https://api.lemonsqueezy.com/v1/licenses/activate
+  Validation : POST https://api.lemonsqueezy.com/v1/licenses/validate
+  Désactiv.  : POST https://api.lemonsqueezy.com/v1/licenses/deactivate
+
+Comportement :
+- 1 clé = 1 machine (limite imposée par LemonSqueezy)
+- Validation périodique en ligne tous les 7 jours
+- En cas de désactivation côté LemonSqueezy : la clé deviendra invalide
+  à la prochaine validation (pas immédiat tant que l'app fonctionne hors-ligne)
+- Machine ID = SHA256(IOPlatformUUID + platform info)
+
+Stockage local :
+  Fichier : ~/Library/Application Support/UtiliScope/.ls_license
+  Format  : JSON chiffré (HMAC-SHA256 + XOR + base64)
+
+Désactivation locale (test) :
+  rm ~/Library/Application\ Support/UtiliScope/.ls_license
+
+
+================================================================================
+8. CHIFFREMENT LOCAL DES LICENCES
+================================================================================
+
+Mécanisme dans main_app.py :
+- _CIPHER_SALT     : sel constant
+- _derive_key()    : dérivation HMAC-SHA256 (clé + salt + machine_id)
+- _encrypt(data)   : XOR sur clé dérivée + base64
+- _decrypt(blob)   : opération inverse
+- _save_local()    : chiffre et écrit .ls_license
+- _load_local()    : lit, déchiffre, vérifie expiration
+- is_valid()       : retourne True si licence valide localement
+
+Test round-trip vérifié : OK (avril 2026).
+
+Note : Le chiffrement protège contre la copie naïve du fichier sur une autre
+machine (la clé dérivée dépend du machine_id).
+
+
+================================================================================
+9. LOGIQUE DE DÉMARRAGE — main()
+================================================================================
+
+1. Vérifier la licence locale
+   - Valide ?           -> run_app() directement
+   - Pas de licence + premier lancement ?
+                        -> dialogue d'accueil (trial ou acheter)
+   - Pas de licence + trial actif ?
+                        -> run_app() avec bannière trial
+   - Pas de licence + trial expiré ?
+                        -> dialogue "licence nécessaire"
+
+Sécurité :
+- try/except global autour trial/licence (l'app se lance quand même en cas d'erreur)
+- Signal handler (SIGTERM, SIGINT) + atexit pour libérer mss/timer
+- closeEvent : timer.stop() AVANT sct.close() pour éviter callbacks sur ressources détruites
+- mss init protégé : message d'erreur clair si capture d'écran refusée
+- Vérification position fenêtre dans les limites de l'écran
+- _app_launched flag dans dialogues pour éviter double run_app()
+
+
+================================================================================
+10. PROTECTION DU CODE
+================================================================================
+
+- Cython compile main_app.py et color_meter.py en .so natifs universal2
+- Directives Cython :
+    embedsignature=False
+    emit_code_comments=False
+- strip -x sur les .so après compilation
+- Suppression des .py/.pyc du bundle .app post-build
+- Suppression des .c intermédiaires
+
+Anti-tampering :
+- _verify_bundle_integrity() vérifie codesign au lancement
+- Ne bloque QUE si l'app est signée Developer ID
+- En mode dev/ad-hoc : ignoré
+
+
+================================================================================
+11. PIPELINE DE BUILD — build.py
+================================================================================
+
+6 étapes :
+
+1. CLEAN
+   Supprime build/, dist/, *.so, *.c
+
+2. CYTHON
+   ARCHFLAGS="-arch arm64 -arch x86_64" python3.12 setup.py build_ext --inplace
+   strip -x sur les .so
+   Supprime les .c
+
+3. PYINSTALLER
+   --target-arch universal2
+   --codesign-identity "Developer ID Application: ..."
+   --windowed --onedir
+   Hidden imports requis :
+     PyQt6.QtCore, PyQt6.QtGui, PyQt6.QtWidgets
+     rubicon.objc, requests, mss, pyautogui, pyqtgraph
+
+4. CODESIGN
+   codesign --verify --deep --strict
+   Fallback manuel si nécessaire
+
+5. DMG
+   hdiutil create avec layout custom :
+     - Fenêtre 600x450
+     - Icônes 128px
+     - App à (150, 170), /Applications à (450, 170)
+     - EULA PDF à (200, 340), Webloc à (400, 340)
+   Inclut ColorScopes.icns comme .VolumeIcon.icns
+   SetFile -a C pour activer l'icône custom du volume
+
+6. NOTARISATION
+   xcrun notarytool submit + staple
+
+
+================================================================================
+12. CONFIGURATION CODESIGN ET NOTARISATION
+================================================================================
+
+- Apple ID                : via $APPLE_ID
+- Team ID                 : via $APPLE_TEAM_ID
+- App-specific password   : via $APPLE_APP_PASSWORD
+- Bundle ID               : com.studiodmtl.utiliscope
+- Signing identity        : via $SIGNING_IDENTITY
+
+Ces credentials sont OBLIGATOIRES via variables d'environnement (build.py lève
+une erreur si elles sont absentes).
+
+
+================================================================================
+13. DMG : LAYOUT, ICÔNES, FICHIERS INCLUS
+================================================================================
+
+Fichiers présents dans le DMG :
+- UtiliScope Beta.app
+- UtiliScope_EULA.pdf
+- UtiliScope Website.webloc  (ouvre https://utiliscope.xyz)
+- /Applications (alias)
+- .VolumeIcon.icns (caché)
+
+LICENSE.txt : SUPPRIMÉ du DMG (le PDF EULA le remplace).
+
+Constantes (build.py) :
+  DMG_WINDOW_WIDTH   = 600
+  DMG_WINDOW_HEIGHT  = 450
+  DMG_ICON_SIZE      = 128
+  DMG_APP_ICON_X/Y   = 150 / 170
+  DMG_APPS_ICON_X/Y  = 450 / 170
+  DMG_EULA_ICON_X/Y  = 200 / 340
+  DMG_WEBLOC_ICON_X/Y= 400 / 340
+
+
+================================================================================
+14. FICHIERS RESSOURCES
+================================================================================
+
+ColorScopes.icns
+  Icône de l'app et du volume DMG (pipette, toutes tailles macOS 16-1024px)
+  Attribution Flaticon : "Pipette icons created by Freepik - Flaticon"
+
+entitlements.plist
+  com.apple.security.cs.disable-library-validation = true
+  com.apple.security.cs.allow-unsigned-executable-memory = true
+
+UtiliScope Website.webloc
+  Format plist XML :
+    <plist version="1.0">
+    <dict>
+      <key>URL</key>
+      <string>https://utiliscope.xyz</string>
+    </dict>
+    </plist>
+
+
+================================================================================
+15. COMMANDES UTILES
+================================================================================
+
+# Lancer en mode dev
+python3.12 main_app.py
+
+# Build complet
+python3.12 build.py
+
+# Régénérer le PDF EULA
+python3.12 create_eula_pdf.py
+
+# DMG seul (sans rebuild de l'app)
+hdiutil create -volname "UtiliScope Beta" \
+  -srcfolder "dist/UtiliScope Beta.app" \
+  -ov -format UDZO "dist/UtiliScope_Beta.dmg"
+
+# Vérifier l'architecture (doit afficher arm64 + x86_64)
+file "dist/UtiliScope Beta.app/Contents/MacOS/UtiliScope Beta"
+
+# Vérifier la signature
+codesign --verify --deep --strict "dist/UtiliScope Beta.app"
+spctl --assess --type execute --verbose "dist/UtiliScope Beta.app"
+
+# Lancer l'app en console pour voir les erreurs
+"/Applications/UtiliScope Beta.app/Contents/MacOS/UtiliScope Beta"
+
+# Reset trial
+security delete-generic-password -s "com.studiodmtl.utiliscope.trial" -a "trial_start"
+
+# Reset licence locale
+rm ~/Library/Application\ Support/UtiliScope/.ls_license
+
+# Reset préférences
+rm ~/Library/Application\ Support/UtiliScope/preferences.json
+
+
+================================================================================
+16. BUGS RÉSOLUS ET LEÇONS APPRISES
+================================================================================
+
+A. Boutons Settings/Help inactifs en version compilée
+   Erreur  : TypeError: show_settings_dialog() takes exactly 1 positional argument (2 given)
+   Cause   : PyQt6 .clicked envoie un bool. Cython est strict sur les signatures
+             (l'interpréteur Python est plus permissif).
+   Fix     : Wrapper TOUS les .clicked.connect avec lambda :
+              btn.clicked.connect(lambda _=False: self.method())
+   Liste complète des connexions corrigées :
+     settings_button, about_button, activate_btn, info_toggle_btn,
+     follow_button, locked_button, place_target_button, capture_button,
+     marker_button, clear_button, about_action.triggered, action.triggered
+
+B. Imports invisibles à PyInstaller (Cython .so)
+   Cause   : PyInstaller analyse le code Python source. Avec .so compilé,
+             les imports internes sont invisibles.
+   Fix     : 1) Imports explicites en haut de color_meter.py
+             2) --hidden-import dans build.py pour PyQt6.*, rubicon.objc,
+                requests, mss, pyautogui, pyqtgraph
+
+C. Double fenêtre lors d'activation depuis la bannière trial
+   Cause racine : on_validation_result du dialogue d'accueil restait connecté
+                  au signal validation_finished après "Essai gratuit". À la
+                  prochaine activation, ce handler orphelin appelait run_app()
+                  une 2e fois.
+   Fix     : Disconnect explicite dans on_trial() AVANT run_app() :
+              try: license_manager.validation_finished.disconnect(on_validation_result)
+              except: pass
+   Fixes secondaires :
+     - LicenseWindow disconnect dans on_success/closeEvent/reject
+     - _app_launched flag dans tous les dialogues
+
+D. Welcome dialog texte coupé
+   Fix : Redesign 420x340, boutons verticaux full-width, style Apple :
+         - Bouton trial 40px bleu #0071E3
+         - Bouton acheter 40px blanc avec bordure
+         - Champ licence + bouton Activer inline
+
+E. SIGABRT macOS sur validation licence
+   Cause : threading.Thread incompatible avec Qt sur macOS
+   Fix   : Migration vers QThread (LicenseValidationThread)
+
+F. Crashes au close
+   Fix : timer.stop() AVANT sct.close() dans closeEvent
+
+G. Bare except remplacés par exceptions spécifiques
+   Partout dans le code.
+
+H. SECRET_KEY toujours défini (évite AttributeError)
+
+
+================================================================================
+17. COMPORTEMENT HORS-LIGNE
+================================================================================
+
+- Activation initiale : nécessite internet (1 seule fois)
+- Utilisation quotidienne : fonctionne hors-ligne indéfiniment
+- Validation périodique : tentative tous les 7 jours
+- Si pas d'internet au moment de la validation : l'app continue de fonctionner
+- Si la clé est désactivée côté LemonSqueezy : la clé devient invalide à la
+  prochaine validation réussie en ligne
+
+
+================================================================================
+18. TEST "COMME UN AUTRE MAC"
+================================================================================
+
+Pour simuler un nouvel ordinateur sans avoir un autre Mac :
+
+1. Supprimer toutes les traces de l'app :
+   rm -rf ~/Library/Application\ Support/UtiliScope
+   security delete-generic-password -s "com.studiodmtl.utiliscope.trial" -a "trial_start" 2>/dev/null
+   security delete-generic-password -s "com.studiodmtl.utiliscope.license" -a "license_key" 2>/dev/null
+   rm -rf ~/Library/Caches/com.studiodmtl.utiliscope
+   rm -rf ~/Library/Preferences/com.studiodmtl.utiliscope.plist
+
+2. Désactiver la clé dans le dashboard LemonSqueezy (sinon
+   l'activation rejettera car la clé est déjà liée à une machine)
+
+3. Relancer l'app
+
+Note : Le machine_id reste le même tant qu'on est sur le même Mac.
+Pour un VRAI test multi-machine, utiliser une VM ou un autre Mac.
+
+
+================================================================================
+19. RESET COMPLET DE L'APP
+================================================================================
+
+Script bash (à enregistrer comme reset_utiliscope.sh, chmod +x, puis lancer) :
+
+#!/bin/bash
+echo "Reset UtiliScope..."
+rm -rf ~/Library/Application\ Support/UtiliScope
+rm -rf ~/Library/Caches/com.studiodmtl.utiliscope
+rm -rf ~/Library/Preferences/com.studiodmtl.utiliscope.plist
+security delete-generic-password -s "com.studiodmtl.utiliscope.trial" -a "trial_start" 2>/dev/null
+security delete-generic-password -s "com.studiodmtl.utiliscope.license" -a "license_key" 2>/dev/null
+echo "UtiliScope remis à zéro."
+
+ATTENTION : ne pas coller ligne par ligne dans le terminal (le shebang #!/bin/bash
+sera interprété comme une commande). Toujours exécuter le script complet.
+
+
+================================================================================
+20. IDENTIFIANTS ET SECRETS (À CONSERVER EN LIEU SÛR)
+================================================================================
+
+LemonSqueezy
+  Store ID    : 241685
+  Product ID  : 691481
+
+Apple Developer
+  Apple ID                : via $APPLE_ID
+  Team ID                 : via $APPLE_TEAM_ID
+  App-specific password   : via $APPLE_APP_PASSWORD
+  Bundle ID               : com.studiodmtl.utiliscope
+
+Dev backdoor (mettre ENABLE_DEV_BACKDOOR = True dans main_app.py)
+  Clé : via $UTILISCOPE_DEV_KEY
+
+Keychain services utilisés
+  com.studiodmtl.utiliscope.trial   (compte: trial_start)
+  com.studiodmtl.utiliscope.license (compte: license_key) [si utilisé]
+
+
+================================================================================
+21. ROADMAP / PISTES FUTURES
+================================================================================
+
+Court terme
+- Rebuild + DMG sur le Mac avec tous les fixes appliqués
+- Tester double-fenêtre résolu
+- Tester sur un autre Mac (ou VM) le flow complet trial -> achat -> activation
+
+Moyen terme
+- Auto-update (Sparkle ou équivalent)
+- Sauvegarde des snapshots en PNG
+- Export des mesures en CSV
+- Mode comparaison 2 zones
+
+Long terme
+- Version Windows (PyQt6 portable, mais signature et licence à refaire)
+- Plugin DaVinci Resolve / Premiere
+- Cloud sync des préférences (optionnel)
+
+
+================================================================================
+FIN DU DOCUMENT
+================================================================================
+Pour toute question future : référer à ce fichier + CLAUDE.md du projet.

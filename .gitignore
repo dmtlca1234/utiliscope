@@ -1,0 +1,51 @@
+# === CODE SOURCE — PRIVÉ ===
+main_app.py
+color_meter.py
+build.py
+setup.py
+build_and_install.sh
+entitlements.plist
+*.spec
+
+# Build artifacts
+build/
+dist/
+*.so
+*.c
+*.dmg
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Claude / AI
+.claude/
+.qodo/
+
+# Certificates & secrets
+*.cer
+*.p12
+*.pem
+
+# Setuptools / eggs
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local data
+preferences.json
+.ls_license
+*.icns

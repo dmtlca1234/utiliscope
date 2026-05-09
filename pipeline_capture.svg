@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" font-family="Inter, -apple-system, Helvetica Neue, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#666"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#E8860C"/>
+    </marker>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2A2B2D"/>
+      <stop offset="100%" style="stop-color:#3A3B3D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="1100" rx="16" fill="#FAFAFA"/>
+
+  <!-- Title -->
+  <text x="450" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#1D1D1F">UtiliScope — Pipeline de capture</text>
+  <text x="450" y="72" text-anchor="middle" font-size="13" fill="#86868B">Architecture du flux de données, de l'écran au vectorscope</text>
+
+  <!-- ============================================ -->
+  <!-- STAGE 1: Source -->
+  <!-- ============================================ -->
+  <rect x="300" y="100" width="300" height="64" rx="12" fill="#F5F5F7" stroke="#D2D2D7" stroke-width="1" filter="url(#shadow)"/>
+  <text x="340" y="126" font-size="11" font-weight="600" fill="#86868B" letter-spacing="1">SOURCE</text>
+  <text x="340" y="148" font-size="15" font-weight="600" fill="#1D1D1F">Contenu affiché sur l'écran</text>
+  <circle cx="318" cy="132" r="10" fill="#007AFF"/>
+  <text x="318" y="136" text-anchor="middle" font-size="11" font-weight="700" fill="white">1</text>
+
+  <!-- Arrow 1→2 -->
+  <line x1="450" y1="164" x2="450" y2="194" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ============================================ -->
+  <!-- STAGE 2: macOS Color Management -->
+  <!-- ============================================ -->
+  <rect x="200" y="200" width="500" height="88" rx="12" fill="#FFF7ED" stroke="#F59E0B" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="240" y="228" font-size="11" font-weight="600" fill="#B45309" letter-spacing="1">macOS COLOR MANAGEMENT</text>
+  <circle cx="218" cy="224" r="10" fill="#F59E0B"/>
+  <text x="218" y="228" text-anchor="middle" font-size="11" font-weight="700" fill="white">2</text>
+  <text x="240" y="250" font-size="13" fill="#78350F">Le GPU applique le <tspan font-weight="600">profil ICC du moniteur</tspan></text>
+  <text x="240" y="270" font-size="13" fill="#78350F">sRGB #D4D950 → affichage réel ≈ #C2C56F</text>
+  <text x="240" y="270" font-size="10" fill="#B45309" dx="285"> (shift normal)</text>
+
+  <!-- Arrow 2→3 -->
+  <line x1="450" y1="288" x2="450" y2="318" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ============================================ -->
+  <!-- STAGE 3: CoreGraphics Capture -->
+  <!-- ============================================ -->
+  <rect x="250" y="324" width="400" height="80" rx="12" fill="#F0F5FF" stroke="#3B82F6" stroke-width="1" filter="url(#shadow)"/>
+  <text x="290" y="352" font-size="11" font-weight="600" fill="#1E40AF" letter-spacing="1">COREGRAPHICS (mss)</text>
+  <circle cx="268" cy="348" r="10" fill="#3B82F6"/>
+  <text x="268" y="352" text-anchor="middle" font-size="11" font-weight="700" fill="white">3</text>
+  <text x="290" y="374" font-size="13" fill="#1E3A5F">sct.grab(monitor) → capture zone pixels</text>
+  <text x="290" y="392" font-size="12" fill="#6B7280">Buffer BGRA brut, valeurs post-ICC</text>
+
+  <!-- Arrow 3→4 -->
+  <line x1="450" y1="404" x2="450" y2="434" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ============================================ -->
+  <!-- STAGE 4: NumPy Buffer -->
+  <!-- ============================================ -->
+  <rect x="250" y="440" width="400" height="96" rx="12" fill="#F5F5F7" stroke="#D2D2D7" stroke-width="1" filter="url(#shadow)"/>
+  <text x="290" y="466" font-size="11" font-weight="600" fill="#86868B" letter-spacing="1">NUMPY BUFFER</text>
+  <circle cx="268" cy="462" r="10" fill="#8B5CF6"/>
+  <text x="268" y="466" text-anchor="middle" font-size="11" font-weight="700" fill="white">4</text>
+  <text x="290" y="488" font-size="13" fill="#1D1D1F">live_buffer [120×120×4] BGRA pré-alloué</text>
+  <text x="290" y="508" font-size="13" fill="#1D1D1F">Zone échantillon: <tspan font-weight="600">NxN au centre</tspan> (1×1 → 30×30)</text>
+  <text x="290" y="524" font-size="12" fill="#6B7280">np.mean(sample_zone) → moyenne B, G, R</text>
+
+  <!-- Arrow 4→ split -->
+  <line x1="450" y1="536" x2="450" y2="566" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ============================================ -->
+  <!-- STAGE 5: Anti-jitter Filter -->
+  <!-- ============================================ -->
+  <rect x="280" y="572" width="340" height="72" rx="12" fill="#FEF2F2" stroke="#EF4444" stroke-width="1" filter="url(#shadow)"/>
+  <text x="318" y="598" font-size="11" font-weight="600" fill="#991B1B" letter-spacing="1">FILTRE ANTI-JITTER</text>
+  <circle cx="298" cy="594" r="10" fill="#EF4444"/>
+  <text x="298" y="598" text-anchor="middle" font-size="11" font-weight="700" fill="white">5</text>
+  <text x="318" y="618" font-size="13" fill="#7F1D1D">Mode Cible: |ΔR|, |ΔG|, |ΔB| &lt; 3 → skip</text>
+  <text x="318" y="634" font-size="12" fill="#6B7280">Empêche les micro-variations de bruit</text>
+
+  <!-- Arrow 5→ split into 3 branches -->
+  <line x1="450" y1="644" x2="450" y2="680" stroke="#666" stroke-width="1.5"/>
+
+  <!-- Split point -->
+  <circle cx="450" cy="686" r="4" fill="#666"/>
+
+  <!-- Branch left: Color Meter -->
+  <line x1="450" y1="686" x2="200" y2="686" stroke="#666" stroke-width="1.5"/>
+  <line x1="200" y1="686" x2="200" y2="716" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Branch center: Vectorscope -->
+  <line x1="450" y1="690" x2="450" y2="716" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Branch right: Preview -->
+  <line x1="450" y1="686" x2="700" y2="686" stroke="#666" stroke-width="1.5"/>
+  <line x1="700" y1="686" x2="700" y2="716" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ============================================ -->
+  <!-- OUTPUT A: Color Meter -->
+  <!-- ============================================ -->
+  <rect x="80" y="722" width="240" height="96" rx="12" fill="#ECFDF5" stroke="#10B981" stroke-width="1" filter="url(#shadow)"/>
+  <text x="116" y="748" font-size="11" font-weight="600" fill="#065F46" letter-spacing="1">COLOR METER</text>
+  <circle cx="98" cy="744" r="10" fill="#10B981"/>
+  <text x="98" y="748" text-anchor="middle" font-size="11" font-weight="700" fill="white">A</text>
+  <text x="116" y="770" font-size="13" fill="#064E3B">round(r), round(g), round(b)</text>
+  <text x="116" y="788" font-size="13" fill="#064E3B">→ RGB, Hex, Swatch</text>
+  <text x="116" y="806" font-size="12" fill="#6B7280">Affichage: (194, 197, 111) #C2C56F</text>
+
+  <!-- ============================================ -->
+  <!-- OUTPUT B: Vectorscope -->
+  <!-- ============================================ -->
+  <rect x="340" y="722" width="220" height="96" rx="12" fill="#EEF2FF" stroke="#6366F1" stroke-width="1" filter="url(#shadow)"/>
+  <text x="376" y="748" font-size="11" font-weight="600" fill="#3730A3" letter-spacing="1">VECTORSCOPE</text>
+  <circle cx="358" cy="744" r="10" fill="#6366F1"/>
+  <text x="358" y="748" text-anchor="middle" font-size="11" font-weight="700" fill="white">B</text>
+  <text x="376" y="770" font-size="13" fill="#312E81">Cb = R·k₁ + G·k₂ + B·k₃</text>
+  <text x="376" y="788" font-size="13" fill="#312E81">Cr = R·k₄ + G·k₅ + B·k₆</text>
+  <text x="376" y="806" font-size="12" fill="#6B7280">Matrice selon colorspace actif</text>
+
+  <!-- ============================================ -->
+  <!-- OUTPUT C: Preview -->
+  <!-- ============================================ -->
+  <rect x="580" y="722" width="240" height="96" rx="12" fill="#FFF7ED" stroke="#F97316" stroke-width="1" filter="url(#shadow)"/>
+  <text x="616" y="748" font-size="11" font-weight="600" fill="#9A3412" letter-spacing="1">PREVIEW</text>
+  <circle cx="598" cy="744" r="10" fill="#F97316"/>
+  <text x="598" y="748" text-anchor="middle" font-size="11" font-weight="700" fill="white">C</text>
+  <text x="616" y="770" font-size="13" fill="#7C2D12">Image QImage 120×120</text>
+  <text x="616" y="788" font-size="13" fill="#7C2D12">depuis sct_img.rgb</text>
+  <text x="616" y="806" font-size="12" fill="#6B7280">Aperçu de la zone capturée</text>
+
+  <!-- ============================================ -->
+  <!-- Timing info -->
+  <!-- ============================================ -->
+  <rect x="100" y="860" width="700" height="56" rx="10" fill="#F5F5F7" stroke="#D2D2D7" stroke-width="1"/>
+  <text x="450" y="884" text-anchor="middle" font-size="13" font-weight="600" fill="#1D1D1F">Cadence : QTimer 100ms (~10 fps) → _update_live_data_optimized(x, y)</text>
+  <text x="450" y="904" text-anchor="middle" font-size="12" fill="#86868B">Mode Suivi: position curseur | Mode Cible: coordonnées verrouillées</text>
+
+  <!-- ============================================ -->
+  <!-- Legend box -->
+  <!-- ============================================ -->
+  <rect x="100" y="940" width="700" height="140" rx="10" fill="white" stroke="#E5E5EA" stroke-width="1"/>
+  <text x="130" y="968" font-size="13" font-weight="600" fill="#1D1D1F">Pourquoi le Hex diffère du navigateur ?</text>
+
+  <rect x="130" y="982" width="12" height="12" rx="2" fill="#F59E0B"/>
+  <text x="150" y="993" font-size="12" fill="#1D1D1F">L'étape 2 (profil ICC) transforme les couleurs sRGB en valeurs spécifiques à ton moniteur</text>
+
+  <rect x="130" y="1006" width="12" height="12" rx="2" fill="#3B82F6"/>
+  <text x="150" y="1017" font-size="12" fill="#1D1D1F">CoreGraphics capture les pixels <tspan font-weight="600">post-transformation</tspan> — c'est la couleur réelle affichée</text>
+
+  <rect x="130" y="1030" width="12" height="12" rx="2" fill="#10B981"/>
+  <text x="150" y="1041" font-size="12" fill="#1D1D1F">Pour le grading vidéo, c'est un avantage : tu vois ce que l'écran produit vraiment</text>
+
+  <rect x="130" y="1054" width="12" height="12" rx="2" fill="#EF4444"/>
+  <text x="150" y="1065" font-size="12" fill="#1D1D1F">Pour le web design (copier un hex exact), un mode "sRGB corrigé" serait nécessaire</text>
+
+</svg>

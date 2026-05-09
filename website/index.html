@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UtiliScope — Real-Time Color Meter for macOS</title>
+
+    <!-- SEO -->
+    <meta name="description" content="UtiliScope is a lightweight macOS utility that puts a professional vectorscope and color meter on your desktop. BT.709, DCI-P3, ARRI. Built for colorists and filmmakers.">
+    <meta name="keywords" content="vectorscope, color meter, macOS utility, colorimetry, color grading, DaVinci Resolve, filmmaking, photography, skin tone, BT.709, DCI-P3, BT.2020, ARRI">
+    <meta name="author" content="STUDIO D MTL">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://utiliscope.xyz/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://utiliscope.xyz/">
+    <meta property="og:title" content="UtiliScope — Real-Time Color Meter for macOS">
+    <meta property="og:description" content="A lightweight vectorscope and color meter that lives in your menu bar. Built for colorists.">
+    <meta property="og:image" content="https://utiliscope.xyz/og-image.png">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="fr_CA">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Geo SEO -->
+    <meta name="geo.region" content="CA-QC">
+    <meta name="geo.placename" content="Montreal">
+    <meta name="geo.position" content="45.5017;-73.5673">
+    <meta name="ICBM" content="45.5017, -73.5673">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "UtiliScope",
+        "operatingSystem": "macOS",
+        "applicationCategory": "MultimediaApplication",
+        "description": "Professional real-time color metering utility for macOS with vectorscope, RGB analysis, and skin tone detection.",
+        "url": "https://utiliscope.xyz",
+        "author": { "@type": "Organization", "name": "STUDIO D MTL", "url": "https://manoirs.ca/en/" },
+        "offers": { "@type": "Offer", "price": "29.99", "priceCurrency": "USD", "availability": "https://schema.org/InStock" },
+        "softwareVersion": "1.2 Beta"
+    }
+    </script>
+
+    <!-- Lemon Squeezy -->
+    <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
+
+    <!-- Fonts: System-like stack with Inter as fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #FFFFFF;
+            --bg-secondary: #F5F5F7;
+            --text: #1D1D1F;
+            --text-secondary: #6E6E73;
+            --text-tertiary: #86868B;
+            --border: #D2D2D7;
+            --border-light: #E8E8ED;
+            --accent: #0071E3;
+            --accent-hover: #0077ED;
+            --radius: 12px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: #B4D5FE; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .container { max-width: 680px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Nav ── */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-light);
+        }
+        .nav-inner {
+            max-width: 680px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 48px;
+        }
+        .nav-left { display: flex; align-items: center; gap: 10px; }
+        .nav-icon {
+            width: 28px; height: 28px; border-radius: 7px;
+            background: linear-gradient(145deg, #3B82F6, #7C3AED);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .nav-icon svg { width: 16px; height: 16px; }
+        .nav-title { font-size: 14px; font-weight: 600; color: var(--text); }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .lang-btn {
+            font-size: 11px; font-weight: 500; color: var(--text-tertiary);
+            cursor: pointer; padding: 3px 8px;
+            border: 1px solid var(--border-light); border-radius: 5px;
+            background: transparent; transition: all 0.15s;
+        }
+        .lang-btn:hover { border-color: var(--border); color: var(--text-secondary); }
+        .nav-buy {
+            font-size: 12px; font-weight: 600; color: #fff;
+            background: var(--accent); padding: 5px 14px;
+            border-radius: 100px; transition: background 0.15s;
+            text-decoration: none;
+        }
+        .nav-buy:hover { background: var(--accent-hover); text-decoration: none; }
+
+        /* ── Hero ── */
+        .hero { padding: 72px 0 48px; text-align: center; }
+        .app-icon {
+            width: 96px; height: 96px; border-radius: 22px;
+            background: linear-gradient(145deg, #3B82F6, #7C3AED);
+            margin: 0 auto 24px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 20px rgba(59,130,246,0.25), 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .app-icon svg { width: 48px; height: 48px; }
+        .app-name {
+            font-size: 32px; font-weight: 600; letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        .app-tagline {
+            font-size: 17px; color: var(--text-secondary);
+            max-width: 440px; margin: 0 auto 28px;
+        }
+        .hero-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn-main {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 24px; border-radius: 100px;
+            background: var(--accent); color: #fff;
+            font-size: 14px; font-weight: 600;
+            transition: background 0.15s;
+            text-decoration: none; border: none; cursor: pointer;
+        }
+        .btn-main:hover { background: var(--accent-hover); text-decoration: none; }
+        .btn-outline {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 24px; border-radius: 100px;
+            background: transparent; color: var(--accent);
+            font-size: 14px; font-weight: 500;
+            border: 1px solid var(--border);
+            transition: all 0.15s;
+            text-decoration: none; cursor: pointer;
+        }
+        .btn-outline:hover { border-color: var(--accent); text-decoration: none; }
+        .hero-meta {
+            margin-top: 16px; font-size: 12px; color: var(--text-tertiary);
+        }
+
+        /* ── Screenshot ── */
+        .screenshot { padding: 0 0 56px; }
+        .screenshot-img {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+        }
+        .screenshot-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 14px;
+            background: #E8E8ED;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-r { background: #FF5F57; }
+        .dot-y { background: #FFBD2E; }
+        .dot-g { background: #28C840; }
+        .screenshot-body {
+            height: 380px;
+            background: #2A2B2D;
+            display: flex; align-items: center; justify-content: center;
+            color: #555; font-size: 13px;
+            position: relative;
+        }
+        .scope-circle {
+            position: absolute;
+            width: 240px; height: 240px;
+            border: 1px dashed #444;
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+        .scope-cross-h {
+            position: absolute; width: 16px; height: 1px;
+            background: #666; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .scope-cross-v {
+            position: absolute; width: 1px; height: 16px;
+            background: #666; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .scope-skinline {
+            position: absolute; width: 120px; height: 1px;
+            background: #C8A050; top: 50%; left: 50%;
+            transform-origin: left center;
+            transform: rotate(-53deg);
+            opacity: 0.6;
+        }
+        .scope-dot {
+            position: absolute; width: 8px; height: 8px;
+            border-radius: 50%; background: #6EA8D4;
+            top: calc(50% + 30px); left: calc(50% - 20px);
+            box-shadow: 0 0 6px rgba(110,168,212,0.5);
+        }
+        .scope-label {
+            position: absolute; font-size: 10px; font-weight: 600;
+        }
+        .scope-label.lR { color: #FF4444; top: calc(50% - 100px); left: calc(50% + 30px); }
+        .scope-label.lG { color: #44FF44; bottom: calc(50% - 80px); left: calc(50% - 80px); }
+        .scope-label.lB { color: #4488FF; top: calc(50% + 10px); right: calc(50% - 110px); }
+        .scope-label.lY { color: #FFFF44; top: calc(50% + 10px); left: calc(50% - 110px); }
+        .scope-label.lC { color: #44FFFF; bottom: calc(50% - 80px); right: calc(50% - 70px); }
+        .scope-label.lM { color: #FF44FF; top: calc(50% - 100px); right: calc(50% - 80px); }
+
+        /* ── Divider ── */
+        .divider {
+            height: 1px; background: var(--border-light);
+            max-width: 680px; margin: 0 auto;
+        }
+
+        /* ── What it does (simple prose) ── */
+        .about { padding: 56px 0; }
+        .about h2 {
+            font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+            margin-bottom: 16px;
+        }
+        .about p {
+            font-size: 15px; color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .about p:last-child { margin-bottom: 0; }
+
+        /* ── Feature list — simple ── */
+        .features { padding: 48px 0; }
+        .features h2 {
+            font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+            margin-bottom: 24px;
+        }
+        .feature-item {
+            display: flex; gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .feature-item:last-child { border-bottom: none; }
+        .feature-bullet {
+            flex-shrink: 0; width: 32px; height: 32px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            margin-top: 2px;
+        }
+        .feature-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .feature-text p { font-size: 13px; color: var(--text-secondary); }
+
+        /* ── Shortcuts ── */
+        .shortcuts { padding: 48px 0; }
+        .shortcuts h2 {
+            font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+            margin-bottom: 24px;
+        }
+        .shortcut-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .shortcut-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        .shortcut-row kbd {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 26px; height: 26px; padding: 0 7px;
+            background: #fff; border: 1px solid var(--border);
+            border-radius: 5px; font-family: var(--font);
+            font-size: 12px; font-weight: 600; color: var(--text);
+            box-shadow: 0 1px 0 var(--border);
+        }
+        .shortcut-row span { font-size: 13px; color: var(--text-secondary); }
+
+        /* ── System Requirements ── */
+        .requirements { padding: 48px 0; }
+        .requirements h2 {
+            font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+            margin-bottom: 16px;
+        }
+        .req-list {
+            list-style: none; font-size: 14px; color: var(--text-secondary);
+        }
+        .req-list li {
+            padding: 6px 0;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .req-list li::before {
+            content: '✓'; color: #34C759; font-weight: 600; font-size: 13px;
+        }
+
+        /* ── CTA ── */
+        .cta { padding: 56px 0; text-align: center; }
+        .cta-box {
+            background: var(--bg-secondary);
+            border-radius: 16px; padding: 48px 32px;
+        }
+        .cta-box h2 {
+            font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
+            margin-bottom: 8px;
+        }
+        .cta-box p {
+            font-size: 14px; color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        .cta-price {
+            font-size: 12px; color: var(--text-tertiary);
+            margin-top: 12px;
+        }
+
+        /* ── Footer ── */
+        footer {
+            padding: 24px 0 32px;
+            border-top: 1px solid var(--border-light);
+            text-align: center;
+            font-size: 12px; color: var(--text-tertiary);
+        }
+        footer a { color: var(--text-tertiary); }
+        footer a:hover { color: var(--text-secondary); }
+        .footer-links { margin-top: 4px; }
+        .footer-links a { margin: 0 8px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .shortcut-grid { grid-template-columns: 1fr; }
+            .hero { padding: 56px 0 40px; }
+            .app-name { font-size: 26px; }
+            .app-tagline { font-size: 15px; }
+            .hero-actions { flex-direction: column; align-items: center; }
+            .btn-main, .btn-outline { width: 100%; justify-content: center; max-width: 280px; }
+            .screenshot-body { height: 260px; }
+        }
+
+        /* ── Fade in ── */
+        .fade-in {
+            opacity: 0; transform: translateY(12px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+    <div class="nav-inner">
+        <div class="nav-left">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/>
+                </svg>
+            </div>
+            <span class="nav-title">UtiliScope</span>
+        </div>
+        <div class="nav-right">
+            <button class="lang-btn" onclick="toggleLang()" aria-label="Switch language">FR</button>
+            <a href="https://utiliscope.xyz/checkout/buy/59a6f0b0-8a4a-4130-88d8-3fa3fe9d0eac?embed=1&media=0&desc=0"
+               class="lemonsqueezy-button nav-buy"
+               data-en="Download" data-fr="Télécharger">Download</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="app-icon fade-in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+                <circle cx="12" cy="12" r="9"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="12" y1="9" x2="12" y2="15"/>
+                <line x1="12" y1="3" x2="14.5" y2="6.5" stroke-opacity="0.5"/>
+            </svg>
+        </div>
+        <h1 class="app-name fade-in">UtiliScope</h1>
+        <p class="app-tagline fade-in"
+           data-en="A real-time vectorscope and color meter for macOS. Lightweight, keyboard-driven, built for colorists."
+           data-fr="Un vectorscope et colorimètre en temps réel pour macOS. Léger, piloté au clavier, conçu pour les coloristes.">
+            A real-time vectorscope and color meter for macOS. Lightweight, keyboard-driven, built for colorists.
+        </p>
+        <div class="hero-actions fade-in">
+            <a href="https://utiliscope.xyz/checkout/buy/59a6f0b0-8a4a-4130-88d8-3fa3fe9d0eac?embed=1&media=0&desc=0"
+               class="lemonsqueezy-button btn-main"
+               data-en="Get UtiliScope — $29.99" data-fr="Obtenir UtiliScope — 29,99 $">Get UtiliScope — $29.99</a>
+            <a href="#about" class="btn-outline"
+               data-en="Learn more" data-fr="En savoir plus">Learn more</a>
+        </div>
+        <p class="hero-meta fade-in"
+           data-en="macOS · Universal Binary · 7-day free trial · One-time purchase"
+           data-fr="macOS · Universal Binary · Essai 7 jours · Achat unique">
+            macOS · Universal Binary · 7-day free trial · One-time purchase
+        </p>
+    </div>
+</section>
+
+<!-- Screenshot -->
+<section class="screenshot">
+    <div class="container">
+        <div class="screenshot-img fade-in">
+            <div class="screenshot-bar">
+                <span class="dot dot-r"></span>
+                <span class="dot dot-y"></span>
+                <span class="dot dot-g"></span>
+            </div>
+            <div class="screenshot-body">
+                <div class="scope-circle"></div>
+                <div class="scope-cross-h"></div>
+                <div class="scope-cross-v"></div>
+                <div class="scope-skinline"></div>
+                <div class="scope-dot"></div>
+                <span class="scope-label lR">R</span>
+                <span class="scope-label lG">G</span>
+                <span class="scope-label lB">B</span>
+                <span class="scope-label lY">Y</span>
+                <span class="scope-label lC">C</span>
+                <span class="scope-label lM">M</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- About -->
+<section class="about" id="about">
+    <div class="container fade-in">
+        <h2 data-en="What it does" data-fr="À quoi ça sert">What it does</h2>
+        <p data-en="UtiliScope reads the color of any pixel on your screen in real-time and plots it on a broadcast-standard vectorscope. It shows you exactly where your colors sit — and whether your skin tones, white balance, and saturation are where they should be."
+           data-fr="UtiliScope lit la couleur de n'importe quel pixel sur votre écran en temps réel et le trace sur un vectorscope de standard broadcast. Il vous montre exactement où se trouvent vos couleurs — et si vos tons peau, balance des blancs et saturation sont au bon endroit.">
+            UtiliScope reads the color of any pixel on your screen in real-time and plots it on a broadcast-standard vectorscope. It shows you exactly where your colors sit — and whether your skin tones, white balance, and saturation are where they should be.
+        </p>
+        <p data-en="Works alongside DaVinci Resolve, Premiere Pro, Lightroom, Capture One, or any app. Just open UtiliScope, move your cursor, and read."
+           data-fr="Fonctionne avec DaVinci Resolve, Premiere Pro, Lightroom, Capture One, ou n'importe quelle application. Ouvrez UtiliScope, déplacez votre curseur, et lisez.">
+            Works alongside DaVinci Resolve, Premiere Pro, Lightroom, Capture One, or any app. Just open UtiliScope, move your cursor, and read.
+        </p>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Features -->
+<section class="features" id="features">
+    <div class="container">
+        <h2 class="fade-in" data-en="Features" data-fr="Fonctionnalités">Features</h2>
+
+        <div class="feature-item fade-in">
+            <div class="feature-bullet">◎</div>
+            <div class="feature-text">
+                <h3 data-en="5 Colorspaces" data-fr="5 espaces couleur">5 Colorspaces</h3>
+                <p data-en="BT.709, BT.601, BT.2020, DCI-P3, and ARRI Wide Gamut. The vectorscope targets, gamut outline, and skin line recalculate for each standard." data-fr="BT.709, BT.601, BT.2020, DCI-P3 et ARRI Wide Gamut. Les cibles, contour de gamut et ligne peau se recalculent pour chaque standard.">BT.709, BT.601, BT.2020, DCI-P3, and ARRI Wide Gamut. The vectorscope targets, gamut outline, and skin line recalculate for each standard.</p>
+            </div>
+        </div>
+
+        <div class="feature-item fade-in">
+            <div class="feature-bullet">⏃</div>
+            <div class="feature-text">
+                <h3 data-en="Skin Tone Line" data-fr="Ligne de tons peau">Skin Tone Line</h3>
+                <p data-en="The I-axis indicator used in Resolve, Baselight, and hardware scopes. Calibrated per colorspace. All human skin tones should fall on this line." data-fr="L'indicateur d'axe I utilisé dans Resolve, Baselight et les scopes hardware. Calibré par espace. Tous les tons peau humains tombent sur cette ligne.">The I-axis indicator used in Resolve, Baselight, and hardware scopes. Calibrated per colorspace. All human skin tones should fall on this line.</p>
+            </div>
+        </div>
+
+        <div class="feature-item fade-in">
+            <div class="feature-bullet">+</div>
+            <div class="feature-text">
+                <h3 data-en="White Balance Crosshair" data-fr="Croix de balance des blancs">White Balance Crosshair</h3>
+                <p data-en="A center cross marks perfect neutral (Cb=0, Cr=0). Point at a grey card, lock the target, and adjust until the dot sits on the cross." data-fr="Une croix centrale marque le neutre parfait (Cb=0, Cr=0). Pointez sur une carte grise, verrouillez, et ajustez jusqu'à ce que le point soit sur la croix.">A center cross marks perfect neutral (Cb=0, Cr=0). Point at a grey card, lock the target, and adjust until the dot sits on the cross.</p>
+            </div>
+        </div>
+
+        <div class="feature-item fade-in">
+            <div class="feature-bullet">#</div>
+            <div class="feature-text">
+                <h3 data-en="Live RGB, Hex, and Position" data-fr="RGB, Hex et position en direct">Live RGB, Hex, and Position</h3>
+                <p data-en="Exact pixel values updated in real-time. Copy hex to clipboard with V. Adjustable sample size from 1×1 to 30×30 pixels." data-fr="Valeurs exactes du pixel mises à jour en temps réel. Copiez le hex avec V. Zone d'échantillonnage de 1×1 à 30×30 pixels.">Exact pixel values updated in real-time. Copy hex to clipboard with V. Adjustable sample size from 1×1 to 30×30 pixels.</p>
+            </div>
+        </div>
+
+        <div class="feature-item fade-in">
+            <div class="feature-bullet">◉</div>
+            <div class="feature-text">
+                <h3 data-en="Follow, Lock, and Capture Modes" data-fr="Modes Suivi, Cible et Capture">Follow, Lock, and Capture Modes</h3>
+                <p data-en="Follow the cursor in real-time, lock onto a specific pixel, or capture a region for analysis. Anti-jitter filter keeps the reading stable in lock mode." data-fr="Suivez le curseur en temps réel, verrouillez sur un pixel, ou capturez une zone pour analyse. Filtre anti-jitter pour une lecture stable en mode cible.">Follow the cursor in real-time, lock onto a specific pixel, or capture a region for analysis. Anti-jitter filter keeps the reading stable in lock mode.</p>
+            </div>
+        </div>
+
+        <div class="feature-item fade-in">
+            <div class="feature-bullet">⊕</div>
+            <div class="feature-text">
+                <h3 data-en="Markers and Snapshots" data-fr="Marqueurs et snapshots">Markers and Snapshots</h3>
+                <p data-en="Drop numbered markers anywhere on the vectorscope. Take a snapshot to overlay before/after comparisons on the same scope." data-fr="Placez des marqueurs numérotés n'importe où sur le vectorscope. Prenez un snapshot pour comparer avant/après sur le même scope.">Drop numbered markers anywhere on the vectorscope. Take a snapshot to overlay before/after comparisons on the same scope.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Shortcuts -->
+<section class="shortcuts" id="shortcuts">
+    <div class="container">
+        <h2 class="fade-in" data-en="Keyboard Shortcuts" data-fr="Raccourcis clavier">Keyboard Shortcuts</h2>
+        <div class="shortcut-grid fade-in">
+            <div class="shortcut-row"><kbd>F</kbd> <span data-en="Follow cursor" data-fr="Suivre le curseur">Follow cursor</span></div>
+            <div class="shortcut-row"><kbd>P</kbd> <span data-en="Place target" data-fr="Placer la cible">Place target</span></div>
+            <div class="shortcut-row"><kbd>C</kbd> <span data-en="Capture mode" data-fr="Mode capture">Capture mode</span></div>
+            <div class="shortcut-row"><kbd>M</kbd> <span data-en="Drop marker" data-fr="Marqueur">Drop marker</span></div>
+            <div class="shortcut-row"><kbd>S</kbd> <span data-en="Cycle colorspace" data-fr="Espace couleur">Cycle colorspace</span></div>
+            <div class="shortcut-row"><kbd>V</kbd> <span data-en="Copy hex" data-fr="Copier hex">Copy hex</span></div>
+            <div class="shortcut-row"><kbd>Z</kbd> <span data-en="Zoom 1×/2×/4×" data-fr="Zoom 1×/2×/4×">Zoom 1×/2×/4×</span></div>
+            <div class="shortcut-row"><kbd>H</kbd> <span data-en="Compact mode" data-fr="Mode compact">Compact mode</span></div>
+            <div class="shortcut-row"><kbd>T</kbd> <span data-en="Snapshot" data-fr="Snapshot">Snapshot</span></div>
+            <div class="shortcut-row"><kbd>⌫</kbd> <span data-en="Clear all" data-fr="Tout effacer">Clear all</span></div>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Requirements -->
+<section class="requirements">
+    <div class="container fade-in">
+        <h2 data-en="System Requirements" data-fr="Configuration requise">System Requirements</h2>
+        <ul class="req-list">
+            <li data-en="macOS 12 Monterey or later" data-fr="macOS 12 Monterey ou plus récent">macOS 12 Monterey or later</li>
+            <li data-en="Apple Silicon (M1/M2/M3/M4) or Intel" data-fr="Apple Silicon (M1/M2/M3/M4) ou Intel">Apple Silicon (M1/M2/M3/M4) or Intel</li>
+            <li data-en="Screen Recording permission required" data-fr="Permission d'enregistrement d'écran requise">Screen Recording permission required</li>
+            <li data-en="Signed and notarized with Apple Developer ID" data-fr="Signé et notarisé avec Apple Developer ID">Signed and notarized with Apple Developer ID</li>
+            <li data-en="No internet required after activation" data-fr="Aucune connexion requise après l'activation">No internet required after activation</li>
+        </ul>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="container">
+        <div class="cta-box fade-in">
+            <h2 data-en="Try it free for 7 days." data-fr="Essayez gratuitement pendant 7 jours.">Try it free for 7 days.</h2>
+            <p data-en="All features included. No credit card. No signup." data-fr="Toutes les fonctionnalités incluses. Pas de carte de crédit. Pas d'inscription.">All features included. No credit card. No signup.</p>
+            <a href="https://utiliscope.xyz/checkout/buy/59a6f0b0-8a4a-4130-88d8-3fa3fe9d0eac?embed=1&media=0&desc=0"
+               class="lemonsqueezy-button btn-main"
+               data-en="Get UtiliScope — $29.99" data-fr="Obtenir UtiliScope — 29,99 $">Get UtiliScope — $29.99</a>
+            <p class="cta-price" data-en="One-time purchase. No subscription." data-fr="Achat unique. Pas d'abonnement.">One-time purchase. No subscription.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <span>© 2026 STUDIO D MTL</span>
+        <div class="footer-links">
+            <a href="https://manoirs.ca/en/" data-en="Studio" data-fr="Studio">Studio</a>
+            <a href="mailto:videaste@manoirs.ca" data-en="Contact" data-fr="Contact">Contact</a>
+        </div>
+    </div>
+</footer>
+
+<!-- Scripts -->
+<script>
+let currentLang = (navigator.language || '').startsWith('fr') ? 'fr' : 'en';
+
+function applyLang(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-' + lang + ']').forEach(el => {
+        el.textContent = el.getAttribute('data-' + lang);
+    });
+    document.querySelector('.lang-btn').textContent = lang === 'en' ? 'FR' : 'EN';
+    document.title = lang === 'fr'
+        ? 'UtiliScope — Colorimètre en temps réel pour macOS'
+        : 'UtiliScope — Real-Time Color Meter for macOS';
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.content = lang === 'fr'
+        ? 'UtiliScope est un utilitaire macOS léger qui affiche un vectorscope et colorimètre professionnel sur votre bureau. BT.709, DCI-P3, ARRI.'
+        : 'UtiliScope is a lightweight macOS utility that puts a professional vectorscope and color meter on your desktop. BT.709, DCI-P3, ARRI.';
+}
+function toggleLang() { applyLang(currentLang === 'en' ? 'fr' : 'en'); }
+applyLang(currentLang);
+
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

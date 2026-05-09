@@ -1,0 +1,39 @@
+UtiliScope — End User License Agreement (EULA)
+Copyright © 2026 STUDIO D MTL. All rights reserved.
+
+By using this software, you agree to the following terms:
+
+1. LICENSE GRANT
+   STUDIO D MTL grants you a non-exclusive, non-transferable license to use
+   UtiliScope on one (1) computer per license key purchased.
+
+2. RESTRICTIONS
+   You may not reverse engineer, decompile, disassemble, or modify this software.
+   You may not redistribute, sublicense, or share your license key.
+
+3. INTELLECTUAL PROPERTY
+   UtiliScope and all related materials are the intellectual property of
+   STUDIO D MTL. All rights not expressly granted are reserved.
+
+4. DISCLAIMER OF WARRANTIES
+   This software is provided "AS IS" without warranty of any kind, express or
+   implied, including but not limited to the warranties of merchantability,
+   fitness for a particular purpose, and non-infringement.
+
+5. LIMITATION OF LIABILITY
+   In no event shall STUDIO D MTL be liable for any indirect, incidental,
+   special, or consequential damages arising out of the use or inability to
+   use this software.
+
+6. TRIAL PERIOD
+   A free 7-day trial is provided. After the trial period, a valid license key
+   is required to continue using the software. License keys are available at
+   https://utiliscope.xyz
+
+7. GOVERNING LAW
+   This agreement is governed by the laws of the Province of Québec and the
+   federal laws of Canada.
+
+For the full bilingual EULA (French/English), see the Help menu within the application.
+
+Contact: https://utiliscope.xyz | https://manoirs.ca/en/
