@@ -1,0 +1,242 @@
+/* UtiliScope for Photoshop — dark HUD theme.
+   Ported from the desktop DARK_HUD_STYLESHEET (main_app.py).
+   UXP-safe CSS only: flexbox, no grid, no z-index, no transitions. */
+
+body {
+  margin: 0;
+  padding: 8px;
+  background-color: #2A2B2D;
+  color: #DDDDDD;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Adobe Clean", sans-serif;
+  font-size: 13px;
+}
+
+[hidden] {
+  display: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Toolbar (8px grid, transparent minimalist buttons) ---------- */
+
+.toolbar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tb-btn {
+  border: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #AAAAAA;
+  background-color: transparent;
+  border-radius: 4px;
+  margin: 2px;
+  font-family: inherit;
+}
+
+.tb-btn:hover {
+  background-color: #3A3A3C;
+  color: #FFFFFF;
+}
+
+.tb-btn:active {
+  background-color: #48484A;
+  color: #FFFFFF;
+}
+
+/* toggled state — main.js may use an attribute or a class */
+.tb-btn[checked],
+.tb-btn.checked {
+  background-color: #48484A;
+  color: #FFFFFF;
+}
+
+/* embossed vertical separator (1px #444444 + 1px #1A1A1A) */
+.sep {
+  width: 0px;
+  height: 20px;
+  border-left: 1px solid #444444;
+  border-right: 1px solid #1A1A1A;
+  margin: 0 6px;
+  align-self: center;
+}
+
+sp-dropdown.space-select {
+  width: 152px;
+  margin: 0 2px;
+}
+
+sp-action-button.mode-btn {
+  margin: 0 2px;
+}
+
+sp-action-button[selected] {
+  background-color: #48484A;
+  border-radius: 4px;
+}
+
+/* ---------- Scope sections ---------- */
+
+.scope-section {
+  margin-bottom: 8px;
+}
+
+.scope-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 5px;
+}
+
+.scope-title {
+  color: #999999;
+  font-size: 11px;
+}
+
+/* iOS-style toggle switch (36x20, green when on) */
+.scope-toggle {
+  width: 36px;
+  height: 20px;
+  border: none;
+  border-radius: 10px;
+  padding: 0;
+  background-color: rgb(120, 120, 128);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.scope-toggle .knob {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background-color: #FFFFFF;
+  margin-left: 2px;
+}
+
+.scope-toggle[checked],
+.scope-toggle.checked {
+  background-color: #34C759;
+}
+
+.scope-toggle[checked] .knob,
+.scope-toggle.checked .knob {
+  margin-left: 18px;
+}
+
+.scope-body {
+  background-color: #2E2E2E;
+  overflow: auto;
+}
+
+/* Vectorscope raster + absolutely-positioned label layer */
+.vscope-wrap {
+  position: relative;
+  width: 360px;
+  height: 360px;
+  margin: 0 auto;
+  background-color: #2E2E2E;
+}
+
+#vectorscopeImg {
+  display: block;
+  width: 360px;
+  height: 360px;
+}
+
+#vectorscopeLabels {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 360px;
+  height: 360px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#vectorscopeLabels span {
+  position: absolute;
+  font-size: 10px;
+  white-space: nowrap;
+  /* left / top / color set inline by the renderer */
+}
+
+/* Secondary scope rasters */
+.scope-img {
+  display: block;
+  width: 100%;
+  background-color: #2E2E2E;
+}
+
+.scope-img-parade { height: 200px; }
+.scope-img-wave   { height: 200px; }
+.scope-img-hist   { height: 150px; }
+
+/* ---------- Info panel ---------- */
+
+.info-panel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.swatch {
+  width: 56px;
+  height: 56px;
+  border: 1px solid #AAAAAA;
+  background-color: #333333;
+}
+
+.info-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 8px;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: row;
+  margin: 1px 0;
+  font-size: 11px;
+}
+
+.info-key {
+  color: #888888;
+  width: 40px;
+}
+
+.info-val {
+  color: #DDDDDD;
+}
+
+/* ---------- Status bar ---------- */
+
+.status-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-top: 1px solid #444444;
+  padding: 4px 8px;
+}
+
+#statusBar {
+  font-size: 11px;
+  color: #888888;
+  flex: 1;
+}
+
+#langNote {
+  font-size: 10px;
+  color: #666666;
+  margin-left: 8px;
+}

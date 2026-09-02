@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- Toolbar row 1: source mode, colorspace, zoom, skin qualifier -->
+    <div class="toolbar">
+      <sp-action-button id="modeDocBtn" class="mode-btn" quiet selected
+                        data-i18n-title="mode_document_tip" title="Analyze the whole document">
+        <span data-i18n="mode_document_btn">Document</span>
+      </sp-action-button>
+      <sp-action-button id="modeSelBtn" class="mode-btn" quiet
+                        data-i18n-title="mode_selection_tip" title="Analyze the active selection (whole document if none)">
+        <span data-i18n="mode_selection_btn">Selection</span>
+      </sp-action-button>
+      <div class="sep"></div>
+      <sp-dropdown id="spaceSelect" class="space-select"
+                   data-i18n-title="colorspace_tip" title="Change the vectorscope color space (shortcut: S)">
+        <sp-menu slot="options">
+          <sp-menu-item value="BT.709" selected>BT.709 (HD/Photo)</sp-menu-item>
+          <sp-menu-item value="BT.601">BT.601 (SD)</sp-menu-item>
+          <sp-menu-item value="BT.2020">BT.2020 (HDR/UHD)</sp-menu-item>
+          <sp-menu-item value="DCI-P3">DCI-P3 (Wide Gamut)</sp-menu-item>
+          <sp-menu-item value="ARRI">ARRI WG (Cinema)</sp-menu-item>
+        </sp-menu>
+      </sp-dropdown>
+      <div class="sep"></div>
+      <button id="zoomBtn" class="tb-btn"
+              data-i18n-title="zoom_tip" title="Vectorscope zoom (Z): 1x / 2x / 4x">Zoom 1x</button>
+      <button id="skinBtn" class="tb-btn" data-i18n="skin_btn"
+              data-i18n-title="skin_tip" title="Skin qualifier: highlight skin-tone hues (Q)">Skin (Q)</button>
+    </div>
+
+    <!-- Toolbar row 2: pause, snapshot, markers, copy hex -->
+    <div class="toolbar">
+      <button id="pauseBtn" class="tb-btn" data-i18n="pause_btn"
+              data-i18n-title="pause_tip" title="Freeze scope refresh (Space)">Pause</button>
+      <button id="snapshotBtn" class="tb-btn" data-i18n="snapshot_btn"
+              data-i18n-title="snapshot_tip" title="Snapshot the current cloud (T)">Snapshot (T)</button>
+      <div class="sep"></div>
+      <button id="markerAddBtn" class="tb-btn" data-i18n="marker_btn"
+              data-i18n-title="marker_tip" title="Place a marker on the vectorscope (shortcut: M)">Marker (M)</button>
+      <button id="markerClearBtn" class="tb-btn" data-i18n="clear_btn"
+              data-i18n-title="clear_tip" title="Clear markers and snapshot (Backspace)">Clear</button>
+      <button id="markerExportBtn" class="tb-btn" data-i18n="marker_export_btn"
+              data-i18n-title="marker_export_tip" title="Export markers to a JSON file">Export</button>
+      <button id="markerImportBtn" class="tb-btn" data-i18n="marker_import_btn"
+              data-i18n-title="marker_import_tip" title="Import markers from a JSON file">Import</button>
+      <div class="sep"></div>
+      <button id="copyHexBtn" class="tb-btn" data-i18n="copy_hex_btn"
+              data-i18n-title="copy_hex_tip" title="Copy the Hex code to the clipboard (V)">Copy Hex (V)</button>
+    </div>
+
+    <!-- Vectorscope -->
+    <div class="scope-section" id="scopeSectionVector">
+      <div class="scope-header">
+        <span class="scope-title" data-i18n="scope_vector_title">Vectorscope</span>
+        <button class="scope-toggle" data-scope="vector" checked><span class="knob"></span></button>
+      </div>
+      <div class="scope-body vscope-body">
+        <div class="vscope-wrap">
+          <img id="vectorscopeImg" width="360" height="360" alt="">
+          <div id="vectorscopeLabels"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RGB Parade -->
+    <div class="scope-section" id="scopeSectionParade">
+      <div class="scope-header">
+        <span class="scope-title" data-i18n="scope_parade_title">RGB Parade</span>
+        <button class="scope-toggle" data-scope="parade"><span class="knob"></span></button>
+      </div>
+      <div class="scope-body" hidden>
+        <img id="paradeImg" class="scope-img scope-img-parade" alt="">
+      </div>
+    </div>
+
+    <!-- Luma Waveform -->
+    <div class="scope-section" id="scopeSectionWave">
+      <div class="scope-header">
+        <span class="scope-title" data-i18n="scope_wave_title">Luma Waveform</span>
+        <button class="scope-toggle" data-scope="wave"><span class="knob"></span></button>
+      </div>
+      <div class="scope-body" hidden>
+        <img id="waveformImg" class="scope-img scope-img-wave" alt="">
+      </div>
+    </div>
+
+    <!-- RGB Histogram -->
+    <div class="scope-section" id="scopeSectionHist">
+      <div class="scope-header">
+        <span class="scope-title" data-i18n="scope_hist_title">RGB Histogram</span>
+        <button class="scope-toggle" data-scope="hist"><span class="knob"></span></button>
+      </div>
+      <div class="scope-body" hidden>
+        <img id="histogramImg" class="scope-img scope-img-hist" alt="">
+      </div>
+    </div>
+
+    <!-- Info panel: swatch + readouts -->
+    <div class="info-panel">
+      <div id="swatchEl" class="swatch"></div>
+      <div class="info-col">
+        <div class="info-row">
+          <span class="info-key" data-i18n="info_rgb">RGB</span>
+          <span id="rgbValue" class="info-val">&#8212;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" data-i18n="info_hex">Hex</span>
+          <span id="hexValue" class="info-val">&#8212;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" data-i18n="info_cbcr">CbCr</span>
+          <span id="cbcrValue" class="info-val">&#8212;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" data-i18n="info_luma">Luma</span>
+          <span id="lumaValue" class="info-val">&#8212;</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span id="statusBar" data-i18n="status_ready">Ready</span>
+      <span id="langNote"></span>
+    </div>
+
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
